@@ -1,8 +1,7 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { NgIconComponent } from '@ng-icons/core';
-
-type ButtonVariant = 'default' | 'destructive';
-type ButtonSize = 'sm' | 'md' | 'lg';
+import { ButtonSize, ButtonVariant } from './button.types';
+import { BUTTON_STYLES } from './button.styles';
 
 @Component({
   selector: 'app-button',
@@ -10,51 +9,50 @@ type ButtonSize = 'sm' | 'md' | 'lg';
   template: `
     <button
       [class]="getButtonClasses()"
-      (click)="btnClicked.emit()">
-      
+      [disabled]="disabled()"
+      [attr.aria-label]="ariaLabel()"
+      [attr.type]="type()"
+      (click)="clicked.emit($event)">
+
       @if (icon()) {
         <ng-icon 
           [name]="icon()" 
           [size]="getIconSize()" 
         />
       }
-      {{ label() }}
+      @if (label()) {
+        <span>{{ label() }}</span>
+      }
     </button>
   `,
   styles: ``
 })
-export class PrimaryButtonComponent {
+export class ButtonComponent {
   label = input('');
   variant = input<ButtonVariant>('default');
   size = input<ButtonSize>('md');
   icon = input<string>();
+  disabled = input<boolean>(false);
+  type = input<'button' | 'submit' | 'reset'>('button');
+  ariaLabel = input<string>();
 
-  btnClicked = output();
+  clicked = output<MouseEvent>();
+
+  private variantState = computed(() => 
+    this.disabled() ? 'disabled' : 'enabled'
+  );
 
   getButtonClasses():string {
-    const baseClasses = 'w-full shadow-md rounded-xl hover:cursor-pointer flex gap-2 items-center justify-center';
+    const classes = [
+      BUTTON_STYLES.base,
+      BUTTON_STYLES.sizes[this.size()],
+      BUTTON_STYLES.variants[this.variant()][this.variantState()]
+    ];
 
-    const sizeClasses = {
-      sm: 'px-3 py-2 text-sm',
-      md: 'px-5 py-2',
-      lg: 'px-6 py-3 text-lg'
-    };
+    return classes.join(' ');
+  };
 
-    const variantClasses = {
-      default: 'bg-blue-500 text-white hover:opacity-90',
-      destructive: 'bg-red-100 text-red-600 hover:bg-red-200 font-semibold border border-red-600',
-    };
-
-    return `${baseClasses} ${sizeClasses[this.size()]} ${variantClasses[this.variant()]}`;
-  }
-
-  getIconSize():string {
-    const sizes = {
-      sm: '16',
-      md: '20',
-      lg: '24'
-    }
-
-    return sizes[this.size()];
-  }
+  getIconSize():string { 
+    return BUTTON_STYLES.iconSizes[this.size()]
+  };
 }
